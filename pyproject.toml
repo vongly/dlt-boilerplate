@@ -1,0 +1,33 @@
+[project]
+name = "dlt-boilerplate"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "arrow>=1.4.0",
+    "dlt[hub,parquet,s3]>=1.32.0",
+    "duckdb>=2.0.0",
+    "duckdb-engine>=0.17.0",
+    "ibis-framework>=12.0.0",
+    "marimo>=0.25.2",
+    "paramiko>=5.1.0",
+    "psycopg2>=2.9.13",
+    "pytest>=9.2.0",
+    "scp>=0.16.2",
+    "simple-salesforce>=1.12.10",
+    "sqlalchemy>=2.0.0",
+    "testcontainers[postgres]>=4.15.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v"
+
+[dependency-groups]
+dev = [
+    "testcontainers[postgres]>=4.15.0",
+]
