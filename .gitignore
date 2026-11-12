@@ -1,6 +1,9 @@
 .pytest_cache/
 *.sqlite
 
+# UV cache
+.uv_cache/
+
 __pycache__/
 *.py[cod]
 *.pyo
