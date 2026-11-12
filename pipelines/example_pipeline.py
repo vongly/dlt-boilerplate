@@ -115,4 +115,6 @@ def example_postgres_to_s3():
             pipeline.print_output()
 
         except Exception as e:
-            print(f"Error running pipeline: {e}")
+            raise e
+        finally:
+            connection.dispose()
