@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 
 
 SF_LOGIN_URL='https://login.salesforce.com/services/Soap/u/59.0'
-#SF_LOGIN_URL='https://test.salesforce.com/services/Soap/u/59.0' # -> test url
 
 def simple_salesforce_call(
     username,
@@ -65,23 +64,23 @@ class SalesforceBulkCall:
 
     def yield_records(
         self,
-        object_name,
+        object,
         incremental:dict=None,
         processed_timestamp=datetime.now(timezone.utc),
     ):
-        print('\n', '  ', object_name)
+        print('\n', '  ', object)
 
         if incremental['attribute'] and incremental['value']:
             where_clause = f''' WHERE {incremental['attribute']} > {incremental['value']}'''
         else:
             where_clause = ''
 
-        obj_desc = self.simple_call.__getattr__(object_name).describe()
+        obj_desc = self.simple_call.__getattr__(object).describe()
 
         compound_fields = list(set([ field['compoundFieldName'] for field in obj_desc['fields'] if field['compoundFieldName'] is not None ]))
         fields = [ field['name'] for field in obj_desc['fields'] if field['name'] not in compound_fields ]
 
-        query = f'select {', '.join(fields)} from {object_name}' + where_clause
+        query = f'select {', '.join(fields)} from {object}' + where_clause
 
         # Tests return default value of 1 record
         if self.test:

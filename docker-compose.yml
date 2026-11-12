@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: dlt_warehouse_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DATAWAREHOUSE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${DATAWAREHOUSE_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DATAWAREHOUSE_POSTGRES_DATABASE}
+    ports:
+      - "${DATAWAREHOUSE_POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATAWAREHOUSE_POSTGRES_USER} -d ${DATAWAREHOUSE_POSTGRES_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: dlt_s3_minio_dev
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_PIPELINE_STAGING_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_PIPELINE_STAGING_SECRET_ACCESS_KEY}
+    ports:
+      - "${S3_PIPELINE_STAGING_PORT}:9000"
+      - "${S3_PIPELINE_STAGING_UI_PORT}:9001"
+    volumes:
+      - minio_data:/data
+
+volumes:
+  postgres_data:
+  minio_data:

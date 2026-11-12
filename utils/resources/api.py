@@ -5,35 +5,49 @@ import re
 
 class APIResource:
     def __init__(
-            self,
-            object_name,
-            api_call,
-            write_disposition='append',
-            incremental_attribute=None,
-            **kwargs,
-        ):
+        self,
+        object: str,
+        call: object,
+        write_disposition: str = "append",
+        incremental_attribute: str | None = None,
+        incremental_initial_value: int = 0,
+        api_source: str | None = None,
+        **kwargs,
+    ):
 
-        self.api_call = api_call
-        self.object_name = object_name
+        """
+            incremental_details expects a dictionary with keys:
+                - attribute: The attribute used for incremental loading
+                - initial_value: The initial value for the incremental attribute
+        
+            i.e.
+            incremental_details = {
+                "attribute": "created",
+                "initial_value": 0,
+            }
+        """
+
+        self.call = call
+        self.object = object
+        self.api_source = api_source
         self.write_disposition = write_disposition
 
-        # Stripe
-        if '[' in incremental_attribute: # greater/less than operators -> [gte]/[gt]/[lte]/[lt]
+        if api_source == "stripe" and incremental_attribute:
             cleaned_incremental_attribute = re.sub(r"\[.*?\]", "", incremental_attribute)
-        # Shopify
-        elif incremental_attribute[-4:] in ['_min', '_max']: # _min returns all records greater/equal to | _max -> opposite
-            cleaned_incremental_attribute = incremental_attribute[:-4]
         else:
             cleaned_incremental_attribute = incremental_attribute
 
         self.incremental_attribute = incremental_attribute
-        self.incremental_obj = incremental(cleaned_incremental_attribute, None) if incremental_attribute else None
-
+        self.incremental_obj = (
+            incremental(cleaned_incremental_attribute, initial_value=incremental_initial_value)
+            if incremental_attribute else None
+        )
 
         # Expected kwargs
-        self.table_name_suffix = kwargs.get('table_name_suffix', '')
+        self.table_name_prefix = kwargs.get("table_name_prefix", "")
+        self.table_name_suffix = kwargs.get("table_name_suffix", "")
 
-    def yield_query_results(self, incremental_obj=None):
+    def yield_query_results(self, incremental_obj: incremental | None = None):
         # Incremental Filter -> requires incremental attribute
         if self.incremental_attribute:
             if incremental_obj:
@@ -47,17 +61,17 @@ class APIResource:
             incremental_value = None
 
         args = {
-            'object_name': self.object_name,
-            'incremental': {
-                'attribute': self.incremental_attribute,
-                'value': incremental_value,
+            "object": self.object,
+            "incremental": {
+                "attribute": self.incremental_attribute,
+                "value": incremental_value,
             }
         }
 
-        yield from self.api_call.yield_records(**args)
+        yield from self.call.yield_records(**args)
 
     def create_resource(self):
-        table_name = self.object_name + self.table_name_suffix
+        table_name = f"{self.table_name_prefix}{self.object}{self.table_name_suffix}"
 
         @dlt.resource(
             name=table_name,
@@ -69,4 +83,3 @@ class APIResource:
             # primary_key=None -> to record history of slow changing fields
             yield from self.yield_query_results(incremental_obj=incremental_obj)
         return my_resource()
-
